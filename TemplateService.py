@@ -1,9 +1,9 @@
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 
-class TemplateService(ServiceBase):
+class DefenderQuarantineService(ServiceBase):
     def __init__(self, config=None):
-        super(TemplateService, self).__init__(config)
+        super(DefenderQuarantineService, self).__init__(config)
 
     def start(self):
         self.log.debug("serviceName service started")

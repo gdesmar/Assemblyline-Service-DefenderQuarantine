@@ -1,0 +1,70 @@
+name: TemplateService
+version: $SERVICE_TAG
+
+description: ALv4 Result sample service
+
+accepts: .*
+rejects: empty|metadata/.*
+
+stage: CORE
+category: Static Analysis
+
+file_required: true
+timeout: 60
+disable_cache: false
+
+enabled: true
+is_external: false
+licence_count: 0
+
+config:
+  str_config: value1
+  int_config: 1
+  list_config: [1, 2, 3, 4]
+  bool_config: false
+
+submission_params:
+  - default: ""
+    name: password
+    type: str
+    value: ""
+  - default: false
+    name: extra_work
+    type: bool
+    value: false
+
+heuristics:
+  - description: This the first Heuristic for ResultSample service.
+    filetype: pdf
+    heur_id: AL_RESULTSAMPLE_1
+    name: Masks has PDF
+    score: 100
+    attack_id: T1001
+  - description: This is second Heuristic for ResultSample service.
+    filetype: exe
+    heur_id: AL_RESULTSAMPLE_2
+    name: Drops an exe
+    score: 1000
+  - description: This is third Heuristic for ResultSample service.
+    filetype: exe
+    heur_id: AL_RESULTSAMPLE_3
+    name: Extraction information
+    score: 0
+
+docker_config:
+  image: adammchugh/assemblyline-service-template
+  cpu_cores: 1.0
+  ram_mb: 256
+
+update_config:
+  method: run
+  sources:
+    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_2MB.zip
+      name: sample_2mb_file
+    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_5MB.zip
+      name: sample_5mb_file
+  update_interval_seconds: 300
+  generates_signatures: false
+  run_options:
+    image: cccs/assemblyline_dev:latest
+    command: python3 -m assemblyline_core.updater.url_update

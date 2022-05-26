@@ -1,7 +1,7 @@
-name: TemplateService
+name: DefenderQuarantine
 version: $SERVICE_TAG
 
-description: ALv4 Result sample service
+description: DefenderQuarantine
 
 accepts: .*
 rejects: empty|metadata/.*
@@ -52,19 +52,7 @@ heuristics:
     score: 0
 
 docker_config:
-  image: adammchugh/assemblyline-service-template
+  image: adammchugh/assemblyline-service-defenderquarantine
   cpu_cores: 1.0
   ram_mb: 256
 
-update_config:
-  method: run
-  sources:
-    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_2MB.zip
-      name: sample_2mb_file
-    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_5MB.zip
-      name: sample_5mb_file
-  update_interval_seconds: 300
-  generates_signatures: false
-  run_options:
-    image: cccs/assemblyline_dev:latest
-    command: python3 -m assemblyline_core.updater.url_update

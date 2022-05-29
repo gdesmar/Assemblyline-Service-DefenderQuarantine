@@ -25,7 +25,7 @@ heuristics:
     description: File was extracted from Windows Defender quarantine file
 
 docker_config:
-  image: adammchugh/assemblyline-service-defenderquarantine:$SERVICE_TAG
+  image: registry.hub.docker.com/adammchugh/assemblyline-service-defenderquarantine:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 384
 

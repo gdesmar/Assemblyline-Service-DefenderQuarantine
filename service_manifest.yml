@@ -6,8 +6,8 @@ description: DefenderQuarantine
 accepts: .*
 rejects: empty|metadata/.*
 
-stage: CORE
-category: Static Analysis
+stage: EXTRACT
+category: Extraction
 
 file_required: true
 timeout: 60
@@ -23,36 +23,15 @@ config:
   list_config: [1, 2, 3, 4]
   bool_config: false
 
-submission_params:
-  - default: ""
-    name: password
-    type: str
-    value: ""
-  - default: false
-    name: extra_work
-    type: bool
-    value: false
-
 heuristics:
-  - description: This the first Heuristic for ResultSample service.
-    filetype: pdf
-    heur_id: AL_RESULTSAMPLE_1
-    name: Masks has PDF
-    score: 100
-    attack_id: T1001
-  - description: This is second Heuristic for ResultSample service.
-    filetype: exe
-    heur_id: AL_RESULTSAMPLE_2
-    name: Drops an exe
-    score: 1000
-  - description: This is third Heuristic for ResultSample service.
-    filetype: exe
-    heur_id: AL_RESULTSAMPLE_3
-    name: Extraction information
+  - heur_id: 1
+    name: Extracted from Quarantined File
     score: 0
+    filetype: "*"
+    description: File was extracted from Windows Defender quarantine file
 
 docker_config:
-  image: adammchugh/assemblyline-service-defenderquarantine
+  image: adammchugh/assemblyline-service-defenderquarantine:$SERVICE_TAG
   cpu_cores: 1.0
-  ram_mb: 256
+  ram_mb: 384
 

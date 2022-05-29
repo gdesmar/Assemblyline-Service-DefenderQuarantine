@@ -1,3 +1,4 @@
+import mimetypes
 import os
 import sys
 import struct
@@ -7,23 +8,27 @@ from binascii import crc32
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 
+
 class DefenderQuarantine(ServiceBase):
     def __init__(self, config=None):
         super().__init__(config)
 
     def start(self):
-        self.log.debug("serviceName service started")
+        self.log.debug("Windows Defender Quarantine service started")
 
     def stop(self):
-        self.log.debug("serviceName service ended")
-    
+        self.log.debug("Windows Defender Quarantine service ended")
+
     def execute(self, request):
         result = Result()
+        file_path = request.file_path
+        file_sha = request.sha256
+        file_type = mimetypes.guess_type(request.file_path)
 
-        text_section = ResultSection('Example of a default section')
-        text_section.add_line("This is a line displayed in the body of the section")
+        text_section = ResultSection('Windows Defender Quarantine Results')
+        text_section.add_line("This is s a test fire of the Assemblyline Service")
         text_section.set_heuristic(1)
-        text_section.add_tag("network.static.domain", "cyber.gc.ca")
+        # text_section.add_tag("network.static.domain", "cyber.gc.ca")
         result.add_section(text_section)
 
         request.result = result
@@ -120,4 +125,3 @@ class DefenderQuarantine(ServiceBase):
             out[k] = val ^ data[k]
 
         return out
-

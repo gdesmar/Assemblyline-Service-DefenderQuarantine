@@ -17,12 +17,6 @@ enabled: true
 is_external: false
 licence_count: 0
 
-config:
-  str_config: value1
-  int_config: 1
-  list_config: [1, 2, 3, 4]
-  bool_config: false
-
 heuristics:
   - heur_id: 1
     name: Extracted from Quarantined File

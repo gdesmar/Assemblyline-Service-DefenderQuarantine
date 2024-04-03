@@ -1,37 +1,26 @@
-import mimetypes
 import os
-import sys
 import struct
-import hashlib
-from binascii import crc32
+import tempfile
 
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import Result, ResultSection
+from assemblyline_v4_service.common.request import ServiceRequest
 
 
 class DefenderQuarantine(ServiceBase):
-    def __init__(self, config=None):
-        super().__init__(config)
 
-    def start(self):
-        self.log.debug("Windows Defender Quarantine service started")
-
-    def stop(self):
-        self.log.debug("Windows Defender Quarantine service ended")
-
-    def execute(self, request):
+    def execute(self, request: ServiceRequest):
         result = Result()
-        file_path = request.file_path
-        file_sha = request.sha256
-        file_type = mimetypes.guess_type(request.file_path)
-
-        text_section = ResultSection('Windows Defender Quarantine Results')
-        text_section.add_line("This is s a test fire of the Assemblyline Service")
-        text_section.set_heuristic(1)
-        # text_section.add_tag("network.static.domain", "cyber.gc.ca")
-        result.add_section(text_section)
-
         request.result = result
+
+        text_section = ResultSection('Windows Defender Quarantine Results', parent=request.result)
+
+        decoded_file = self.mse_unquarantine(request)
+        if decoded_file:
+            text_section.set_heuristic(1)
+            text_section.add_line("Succesfully decoded file from Windows Defender Quarantine file")
+            text_section.add_line(decoded_file)
+            text_section.add_tag("file.name.decoded", decoded_file)
 
     # MS SCEP & SE quarantined files decrypter
     # This script is a fork from quarantine.py from the cuckoosandbox project.
@@ -45,33 +34,36 @@ class DefenderQuarantine(ServiceBase):
     # Credit: https://raw.githubusercontent.com/brad-accuvant/cuckoo-modified/00ad13c94cc7453c40ed6152d16009ca1c8ed6f2/lib/cuckoo/common/quarantine.py
     # Link to license: https://github.com/brad-accuvant/cuckoo-modified/blob/master/docs/LICENSE
     #
-    # mse_unquarantine(sys.argv[1])
-
-    def mse_unquarantine(self, f):
-        with open(f, "rb") as quarfile:
+    def mse_unquarantine(self, request: ServiceRequest):
+        with open(request.file_path, "rb") as quarfile:
             data = bytearray(quarfile.read())
 
         fsize = len(data)
         if fsize < 12 or data[0] != 0x0B or data[1] != 0xad or data[2] != 0x00:
             return None
 
-        sbox = self.mse_ksa()
-        outdata = self.rc4_decrypt(sbox, data)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # TODO: Validate that using a temp folder to write the resulting decodedfile is not a problem
+            # I would believe the file may disappear before the service finishes
+            sbox = self.mse_ksa()
+            outdata = self.rc4_decrypt(sbox, data)
 
-        with open(sys.argv[1] + "_decoded_meta.bin", "wb") as f:
-            f.write(outdata)
+            with open(os.path.join(temp_dir, f"{request.file_name}_decoded_meta.bin"), "wb") as f:
+                f.write(outdata)
 
-        print
-        sys.argv[1] + "_decoded_meta.bin saved."
+            headerlen = 0x28 + struct.unpack("<I", outdata[8:12])[0]
+            origlen = struct.unpack("<I", outdata[headerlen - 12:headerlen - 8])[0]
 
-        headerlen = 0x28 + struct.unpack("<I", outdata[8:12])[0]
-        origlen = struct.unpack("<I", outdata[headerlen - 12:headerlen - 8])[0]
+            filename = f"{request.file_name}_decoded.bin"
+            decodedfile = os.path.join(temp_dir, filename)
 
-        if origlen + headerlen == fsize:
-            with open(sys.argv[1] + "_decoded.bin", "wb") as f:
-                f.write(outdata[headerlen:])
-        print
-        sys.argv[1] + "_decoded.bin saved."
+            if origlen + headerlen == fsize:
+                with open(decodedfile, "wb") as f:
+                    f.write(outdata[headerlen:])
+
+            # TODO: This and returning the decodedfile should only happen if the previous condition was true
+            request.add_extracted(decodedfile, filename, "mse unquarantine file")
+        return decodedfile
 
     def mse_ksa(self):
         # hardcoded key obtained from mpengine.dll
@@ -101,8 +93,8 @@ class DefenderQuarantine(ServiceBase):
                0xDB, 0x2F, 0x35, 0xD3, 0xC1, 0xB9, 0xCE, 0xD5, 0x26, 0x36,
                0xF2, 0x76, 0x5E, 0x1A, 0x95, 0xCB, 0x7C, 0xA4, 0xC3, 0xDD,
                0xAB, 0xDD, 0xBF, 0xF3, 0x82, 0x53
-               ]
-        sbox = range(256)
+        ]
+        sbox = list(range(256))
         j = 0
         for i in range(256):
             j = (j + sbox[i] + key[i]) % 256
@@ -111,7 +103,7 @@ class DefenderQuarantine(ServiceBase):
             sbox[j] = tmp
         return sbox
 
-    def rc4_decrypt(sbox, data):
+    def rc4_decrypt(self, sbox, data):
         out = bytearray(len(data))
         i = 0
         j = 0
